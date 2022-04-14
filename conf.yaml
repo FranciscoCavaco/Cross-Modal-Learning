@@ -1,0 +1,7 @@
+data:
+    dataset_dir: ~/Clotho
+    splits:
+        train: development
+        val: validation
+        test: evaluation
+    hdf5_file: audio_logmel.hdf5
