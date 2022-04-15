@@ -1,4 +1,5 @@
 import os
+from re import S
 from typing import List, Union
 
 
@@ -7,6 +8,10 @@ import numpy as np
 import librosa
 import yaml
 import h5py
+import glob
+from mutagen.wave import WAVE
+from tqdm import tqdm
+
 
 class Typing_Utils:
     # ? Check if list val is of type types
@@ -22,6 +27,51 @@ class Typing_Utils:
                 break
         return not_error
 
+
+class Preprocess:
+    def __init__(self) -> None:
+        self.audio_fids, self.audio_fnames, self.audio_durations = {}, {}, {}
+
+    # ? Seperate audio files
+    def __call__(self):
+        with open("conf.yaml", "rb") as stream:
+            conf = yaml.full_load(stream)
+
+        conf_data = conf["data"]
+        conf_splits = [conf_data["splits"][split] for split in conf_data["splits"]]
+
+        fid_count = 0
+        for split in conf_splits:
+
+            fids, fnames, durations = {}, [], []
+            # Glob is to get all the file name
+            for fpath in tqdm(
+                glob.glob(
+                    r"{}/*.wav".format(os.path.join(conf_data["dataset_dir"], split))
+                ),
+                desc=split,
+            ):
+                # ? From baseline code https://dcase.community/challenge2022/task-language-based-audio-retrieval
+                try:
+                    clip = WAVE(fpath)
+
+                    if clip.info.length > 0.0:
+                        fid_count += 1
+
+                        fname = os.path.basename(fpath)
+                        fids[fname] = fid_count
+                        fnames.append(fname)
+                        durations.append(clip.info.length)
+                except:
+                    print("Error audio file: {}.".format(fpath))
+
+                self.audio_fids[split] = fids
+                self.audio_fnames[split] = fnames
+                self.audio_durations[split] = durations
+        #This object is then saved using pickle
+        with open(os.path.join(global_params["dataset_dir"], "audio_info.pkl"), "wb") as store:
+            pickle.dump({"audio_fids": audio_fids, "audio_fnames": audio_fnames, "audio_durations": audio_durations}, store)
+        print("Saved audio info")
 
 
 class Utils:
@@ -55,7 +105,7 @@ class Utils:
             self.audio_params.fmax = fmax
             self.audio_params.log_offset = log_offset
 
-        #Create a log_mel_spectogram
+        # Create a log_mel_spectogram
         def __log_mel_spectogram(self, y: List[float]):
             type_check = Typing_Utils()
 
@@ -96,24 +146,23 @@ class Utils:
 
             return self.mel_spectrogram
 
-        #Turn the audio into an h5py file
+        # Turn the audio into an h5py file
         def dir_to_h5py_logmel(self):
-            #Load config
+            # Load config
             with open("conf.yaml", "rb") as stream:
                 conf = yaml.full_load(stream)
-            conf_data = conf['data']
-           
+            conf_data = conf["data"]
+
             output_file = os.path.join(conf_data["dataset_dir"], conf_data["hdf5_file"])
 
-            #Load splits           
-            conf_splits = [conf_data['splits'][split] for split in conf_data['splits']]
-            with open(os.path.join(conf_data["dataset_dir"], "audio_info.pkl"), "rb") as store:
-                global_params["audio_fids"] = pickle.load(store)["audio_fids"]
-            with h5py.File(output_file, "w") as feature_store:
+            # Load splits
+            conf_splits = [conf_data["splits"][split] for split in conf_data["splits"]]
+            # with open(os.path.join(conf_data["dataset_dir"], "audio_info.pkl"), "rb") as store:
 
+        #     global_params["audio_fids"] = pickle.load(store)["audio_fids"]
+        # with h5py.File(output_file, "w") as feature_store:
 
 
 if __name__ == "__main__":
-    utils = Utils()
-    audio = utils.Audio()
-    audio.dir_to_h5py_logmel()
+    preprocess = Preprocess()
+    preprocess()

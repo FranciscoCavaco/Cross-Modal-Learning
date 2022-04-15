@@ -1,5 +1,5 @@
 data:
-    dataset_dir: ~/Clotho
+    dataset_dir: Clotho
     splits:
         train: development
         val: validation
