@@ -14,6 +14,13 @@ from tqdm import tqdm
 import pickle
 import pandas as pd
 
+#! NLP
+import gensim.downloader as downloader
+import nltk
+from nltk.corpus import wordnet
+import re
+import contractions
+import string
 
 class Typing_Utils:
     # ? Check if list val is of type types
@@ -33,6 +40,89 @@ class Typing_Utils:
 class Preprocess:
     def __init__(self) -> None:
         self.audio_fids, self.audio_fnames, self.audio_durations = {}, {}, {}
+
+    """
+    This downloads the embedding model and applies IOB chunking along with the POS tag
+    """
+
+    def word_processor(self, _text):
+        # ? Code inspired by https://dcase.community/challenge2022/task-language-based-audio-retrieval
+        stopwords = nltk.corpus.stopwords.words("english")  # Get stopwords
+
+        UNK_token = "<UNK>"  # ? Unknown
+
+        # ? nltk pos is trained using the Treebank dataset
+        # ? So we can translate from Treebank to wordnet
+        # https://stackoverflow.com/questions/15586721/wordnet-lemmatization-and-pos-tagging-in-python
+        wordnet_pos_tag = {
+            "J": wordnet.ADJ,
+            "N": wordnet.NOUN,
+            "V": wordnet.VERB,
+            "R": wordnet.ADV,
+        }
+
+        #? Pretrained word2vec model 
+        word2vec = "word2vec-google-news-300"
+
+        #? Local embedder
+        def __embedder(word):
+            embedding_model = downloader.load(word2vec)
+            try:
+                return embedding_model.get_vector(word)
+            except KeyError:
+                return None
+        
+        #! Cleaning the data
+        #TODO: Remove stopwords? Lemmatise? Implement slang option in the contractions
+        text = re.sub(r"\s+", " ", _text) #? Removing repeated spaces
+        text = contractions.fix(text) #? Expand contractions
+        text = re.sub(r"-+", " ", text) #? Remove dashes, replace with spaces
+        text = "".join([i for i in text if i not in string.punctuation]) #? remoe punctuation
+
+        #? tokenizing & POS
+        tokens = nltk.word_tokenize(text)
+        tokens_tag = nltk.pos_tag(tokens)
+
+        #? chunking
+        #https://www.guru99.com/pos-tagging-chunking-nltk.html
+        #https://www.nltk.org/book/ch07.html
+        chunked_tree = nltk.ne_chunk(tokens_tag, binary=True)
+        tokens_tag = nltk.tree2conlltags(chunked_tree) # Convert to word, POStag, IOBtag https://stackoverflow.com/questions/40879520/nltk-convert-a-chunked-tree-into-a-list-iob-tagging
+
+        words = list()
+
+        #? filter out the relevant words
+        for token, pos_tag, iob_tag in tokens_tag:
+            if iob_tag != "O": #? This means that it is not outside thus it must be part of a NE
+                words.append(UNK_token)
+            
+            elif pos_tag in ["POS"]: #? If it is a possessive ending (POS = part of speech tag) https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html#:~:text=17.,Possessive%20ending
+                pass
+        
+            elif token in string.punctuation:
+                pass
+
+            elif __embedder(token) is not None: #? if the token has an embedding
+                words.append(token)
+
+            else:
+                #? we now try to lemmatise and stem the word to find an embedding
+                lemmatizer = nltk.WordNetLemmatizer()
+                #? Since our POS are in Treebank form we try to see if we can match it with a wordnet POS, if not we assume its a noun
+                lemma = lemmatizer.lemmatize(token, pos=wordnet_pos_tag.get(pos_tag[0], wordnet.NOUN))
+
+                if __embedder(lemma) is not None: #? if we find an embeddin for the lemma store it
+                    words.append(lemma)
+                else:
+                    #? Try to stem it further to possibly discover an embedding
+                    stemmer = nltk.SnowballStemmer(language="english")
+                    root = stemmer.stem(lemma)
+
+                    if __embedder(root) is not None:
+                        words.append(root)
+                    else:
+                        words.append(UNK_token) #? No embedding found
+        return text, words
 
     # ? Seperate out the audio files
     def __audio_seperator(self):
@@ -85,8 +175,8 @@ class Preprocess:
             )
         print("Saved audio info")
 
-    def __caption_seperator(self):
-        if len(self.audio_fids):
+    def __caption_seperator(self): #? base code https://dcase.community/challenge2022/task-language-based-audio-retrieval
+        if not len(self.audio_fids):
             raise NotImplementedError(
                 "Make sure to run __audio_seperator() before this function as self.audio_fids is not set."
             )
@@ -101,9 +191,13 @@ class Preprocess:
             captions = pd.read_csv(
                 os.path.join(conf_captions["captions_dir"], cap_file)
             )
+            split_fids = self.audio_fids[split]
+            for row in range(len(captions)):
+                print(captions.index)
 
     # ? Seperate audio files
     def __call__(self):
+        self.__audio_seperator()
         self.__caption_seperator()
 
 
