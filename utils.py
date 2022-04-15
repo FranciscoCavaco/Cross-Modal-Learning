@@ -11,6 +11,8 @@ import h5py
 import glob
 from mutagen.wave import WAVE
 from tqdm import tqdm
+import pickle
+import pandas as pd
 
 
 class Typing_Utils:
@@ -32,8 +34,8 @@ class Preprocess:
     def __init__(self) -> None:
         self.audio_fids, self.audio_fnames, self.audio_durations = {}, {}, {}
 
-    # ? Seperate audio files
-    def __call__(self):
+    # ? Seperate out the audio files
+    def __audio_seperator(self):
         with open("conf.yaml", "rb") as stream:
             conf = yaml.full_load(stream)
 
@@ -68,10 +70,41 @@ class Preprocess:
                 self.audio_fids[split] = fids
                 self.audio_fnames[split] = fnames
                 self.audio_durations[split] = durations
-        #This object is then saved using pickle
-        with open(os.path.join(global_params["dataset_dir"], "audio_info.pkl"), "wb") as store:
-            pickle.dump({"audio_fids": audio_fids, "audio_fnames": audio_fnames, "audio_durations": audio_durations}, store)
+
+        # This object is then saved using pickle
+        with open(
+            os.path.join(conf_data["pickle_dir"], "audio_info.pkl"), "wb"
+        ) as store:
+            pickle.dump(
+                {
+                    "audio_fids": self.audio_fids,
+                    "audio_fnames": self.audio_fnames,
+                    "audio_durations": self.audio_durations,
+                },
+                store,
+            )
         print("Saved audio info")
+
+    def __caption_seperator(self):
+        if len(self.audio_fids):
+            raise NotImplementedError(
+                "Make sure to run __audio_seperator() before this function as self.audio_fids is not set."
+            )
+        with open("conf.yaml", "rb") as stream:
+            conf = yaml.full_load(stream)
+        conf_captions = conf["captions"]
+        conf_data = conf["data"]
+        conf_splits = [conf_data["splits"][split] for split in conf_data["splits"]]
+
+        for split in conf_splits:
+            cap_file = f"{conf_captions['caption_prefix']}{split}.csv"  # ? File name for current split
+            captions = pd.read_csv(
+                os.path.join(conf_captions["captions_dir"], cap_file)
+            )
+
+    # ? Seperate audio files
+    def __call__(self):
+        self.__caption_seperator()
 
 
 class Utils:

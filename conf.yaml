@@ -5,3 +5,9 @@ data:
         val: validation
         test: evaluation
     hdf5_file: audio_logmel.hdf5
+    pickle_dir: SavedData
+
+captions:
+    captions_dir: Captions
+    caption_prefix: clotho_captions_
+    
