@@ -4,10 +4,14 @@ data:
         train: development
         val: validation
         test: evaluation
+    hdf5_dir: SavedData
     hdf5_file: audio_logmel.hdf5
     pickle_dir: SavedData
 
 captions:
     captions_dir: Captions
     caption_prefix: clotho_captions_
+    json_dir: SavedData
     
+audio:
+    h5py_name: audio_logmel
