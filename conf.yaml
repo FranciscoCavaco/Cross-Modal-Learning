@@ -1,17 +1,40 @@
 data:
-    dataset_dir: Clotho
-    splits:
-        train: development
-        val: validation
-        test: evaluation
-    hdf5_dir: SavedData
-    hdf5_file: audio_logmel.hdf5
-    pickle_dir: SavedData
+  dataset_dir: Clotho
+  splits:
+    train: development
+    val: validation
+    test: evaluation
+  hdf5_dir: SavedData
+  hdf5_file: audio_logmel.hdf5
+  pickle_dir: SavedData
 
 captions:
-    captions_dir: Captions
-    caption_prefix: clotho_captions_
-    json_dir: SavedData
-    
+  captions_dir: Captions
+  caption_prefix: clotho_captions_
+  json_dir: SavedData
+
 audio:
-    h5py_name: audio_logmel
+  h5py_name: audio_logmel
+
+# Configurations for training
+training:
+  model: CRNNWordModel
+  algorithm:
+    epochs: 150
+    batch_size: 32
+    criterion: TripletRankingLoss
+    optimizer: AdamOptimizer
+
+# Model hyper-parameters
+CRNNWordModel:
+  name: CRNNWordModel
+  args:
+    audio_encoder:
+      in_dim: 64
+      out_dim: 300
+      up_sampling: True
+    text_encoder:
+      word_embedding:
+        embed_dim: 300
+        pretrained: True
+        trainable: False

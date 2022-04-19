@@ -42,6 +42,15 @@ class Typing_Utils:
         return not_error
 
 
+"""
+Generates:
+- Caption info
+- audio_info
+- vocab_info
+
+"""
+
+
 class Preprocess:
     def __init__(self) -> None:
         self.audio_fids, self.audio_fnames, self.audio_durations = {}, {}, {}
@@ -50,14 +59,13 @@ class Preprocess:
         self.embedding_model = downloader.load(word2vec)
         # ? Code inspired by https://dcase.community/challenge2022/task-language-based-audio-retrieval
         self.stopwords = nltk.corpus.stopwords.words("english")  # Get stopwords
+        self.UNK_token = "<UNK>"  # ? Unknown
 
     """
     This downloads the embedding model and applies IOB chunking along with the POS tag
     """
 
-    def word_processor(self, _text):
-
-        UNK_token = "<UNK>"  # ? Unknown
+    def __word_processor(self, _text):
 
         # ? nltk pos is trained using the Treebank dataset
         # ? So we can translate from Treebank to wordnet
@@ -71,12 +79,12 @@ class Preprocess:
 
         # ? Local embedder
         def __embedder(word):
-
             try:
                 return self.embedding_model.get_vector(word)
             except KeyError:
                 return None
 
+        self.__embedder = __embedder  # ? Store for later use
         #! Cleaning the data
         # TODO: Remove stopwords? Lemmatise? Implement slang option in the contractions
         text = re.sub(r"\s+", " ", _text)  # ? Removing repeated spaces
@@ -105,7 +113,7 @@ class Preprocess:
             if (
                 iob_tag != "O"
             ):  # ? This means that it is not outside thus it must be part of a NE
-                words.append(UNK_token)
+                words.append(self.UNK_token)
 
             elif pos_tag in [
                 "POS"
@@ -138,7 +146,7 @@ class Preprocess:
                     if __embedder(root) is not None:
                         words.append(root)
                     else:
-                        words.append(UNK_token)  # ? No embedding found
+                        words.append(self.UNK_token)  # ? No embedding found
         return text, words
 
     # ? Seperate out the audio files
@@ -203,8 +211,6 @@ class Preprocess:
         with open("conf.yaml", "rb") as stream:
             conf = yaml.full_load(stream)
 
-        preprocess = Preprocess()
-
         conf_captions = conf["captions"]
         conf_data = conf["data"]
         conf_splits = [conf_data["splits"][split] for split in conf_data["splits"]]
@@ -231,7 +237,7 @@ class Preprocess:
                 for cap in [c1, c2, c3, c4, c5]:
                     cid_count += 1
 
-                    text, words = preprocess.word_processor(cap)
+                    text, words = self.__word_processor(cap)
 
                     # cid, fid, fname, original, caption, tokens
                     audio_captions.append([cid_count, fid, fname, cap, text, words])
@@ -300,16 +306,80 @@ class Preprocess:
             )
         print("Saved vocabulary info")
 
+    def __embedding_gen(self):
+        with open("conf.yaml", "rb") as stream:
+            conf = yaml.full_load(stream)
+
+        if not self.__embedder:
+            raise NotImplementedError(
+                "Make sure to run __word_processor() before this function as self.__embedder is not set."
+            )
+
+        word_embs = {}
+        emb_matrix, emb_shape = None, None
+
+        conf_data = conf["data"]
+        try:
+            with open(
+                os.path.join(conf_data["pickle_dir"], "vocab_info.pkl"), "rb"
+            ) as store:
+                vocab_info = pickle.load(store)
+                vocabulary = vocab_info["vocabulary"]
+        except:
+            print("Problem loading file: vocab_info.pkl, does it exist?")
+
+        # Generate the word embeddings from the preprocessed tokens
+        for word in tqdm(vocabulary, desc="Embeddings Gen"):
+            if word != self.UNK_token:
+                word_embs[word] = self.__embedder(word)
+
+                if emb_shape is None:
+                    emb_shape = word_embs[word].shape  # ? set embedding size
+
+                if emb_matrix is None:
+                    emb_matrix = word_embs[word]  # ? create embedding matrix
+                else:
+                    emb_matrix = np.vstack((emb_matrix, word_embs[word]))
+
+        mean, std = np.mean(emb_matrix, axis=0), np.std(
+            emb_matrix, axis=0
+        )  # mean & std = (300,)
+
+        # Generate UNK_token embedding
+        dot_product = 1.0
+        UNK_emb = np.zeros_like(mean)
+
+        # ? Generate the least similar embedding
+        while np.all(
+            np.abs(dot_product) > 0.01
+        ):  # ? Check if one is much more different
+            UNK_emb = mean + std * np.random.randn(
+                emb_shape[0]
+            )  # ? Go furthest away from the mean
+            dot_product = np.dot(emb_matrix, UNK_emb)  # ? perform row wise dot product
+            print(dot_product.shape)
+
+        word_embs[self.UNK_token] = UNK_emb
+
+        # Save pretrained embeddings
+        with open(
+            os.path.join(conf_data["pickle_dir"], "word2vec_emb.pkl"), "wb"
+        ) as store:
+            pickle.dump(word_embs, store)
+        print("Saved pretrained embeddings info")
+
     # ? Seperate audio files
     def __call__(self):
         self.__audio_seperator()
         self.__caption_seperator()
         self.__vocab_info()
+        self.__embedding_gen()
 
 
 """
 This calculates the log mel spectogram and as a function to place it into an h5py format
 
+Generates the audio_logmel file
 """
 
 
@@ -429,6 +499,7 @@ class Utils:
                             feature_store[str(fid)] = feat
                         except:
                             print("Error file: {}.".format(fpath))
+            print("Saved logmel data")
 
         def __call__(self):
             with open("conf.yaml", "rb") as stream:
@@ -446,7 +517,21 @@ class Utils:
 
             self.__dir_to_h5py_logmel(fids)
 
+
+"""
+Generates all the essential files
+"""
+
+
+class FileGen:
+    def __call__(self):
+        preprocess = Preprocess()
+        utils = Utils().Audio()
+        # ? To generate all the necessary files
+        preprocess()
+        utils()
+
+
 if __name__ == "__main__":
-    utils = Utils()
-    audio_utils = utils.Audio()
-    audio_utils()
+    fileGen = FileGen()
+    fileGen()
