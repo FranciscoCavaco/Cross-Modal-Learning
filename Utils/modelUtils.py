@@ -24,10 +24,13 @@ def get_model(config, vocabulary):
 
     #? This allows us to configure different models 
     if config["name"] in ["CRNNWordModel"]:
+        #? this sets the value by pass by value 
         embed_args = model_args["text_encoder"]["word_embedding"]
         embed_args["num_word"] = len(vocabulary)
         embed_args["word_embeds"] = vocabulary.get_weights() if embed_args["pretrained"] else None
 
+       
         return getattr(core, config["name"], None)(**model_args)
 
+    print('args:', model_args)
     return None

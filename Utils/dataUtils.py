@@ -93,7 +93,7 @@ def collate_fn(data_batch):
 
     return audio_feat_batch.float(), audio_feat_lens, query_batch.long(), query_lens, info_batch
 
-#? padding should be needed as lengths are fixed to 300
+#? realistically padding is only needed for the tokens, as there can be larger sentences than others
 def pad_tesnsors(tensor_list):
     tensor_lens = [tensor.shape for tensor in tensor_list]
 

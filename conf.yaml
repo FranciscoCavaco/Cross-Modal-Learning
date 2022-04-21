@@ -39,3 +39,27 @@ CRNNWordModel:
         embed_dim: 300
         pretrained: True
         trainable: False
+
+
+# Algorithm hyper-parameters
+
+# Losses
+TripletRankingLoss:
+    name: TripletRankingLoss
+    args:
+        margin: 1.0
+
+
+# Optimizers
+AdamOptimizer:
+    name: Adam
+    args:
+        lr: 0.001
+        weight_decay: 0.0
+    scheduler_args:
+        mode: min
+        factor: 0.1
+        patience: 5
+        threshold: 0.01
+        threshold_mode: abs
+
