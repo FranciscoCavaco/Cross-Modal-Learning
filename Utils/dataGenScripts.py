@@ -306,6 +306,8 @@ class Preprocess:
             )
         print("Saved vocabulary info")
 
+    #? Converts the vocabulary from vocab_info (which came from the NER from the _captions.json)
+    #? into an embedded form
     def __embedding_gen(self):
         with open("conf.yaml", "rb") as stream:
             conf = yaml.full_load(stream)
@@ -363,7 +365,7 @@ class Preprocess:
 
         # Save pretrained embeddings
         with open(
-            os.path.join(conf_data["pickle_dir"], "word2vec_emb.pkl"), "wb"
+            os.path.join(conf_data["pickle_dir"], conf_data["emb_file"]), "wb"
         ) as store:
             pickle.dump(word_embs, store)
         print("Saved pretrained embeddings info")
