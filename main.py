@@ -28,5 +28,6 @@ def train(config, checkpoint_dir=None):
         #? batch_size = 32
         _loader = DataLoader(dataset=_dataset, batch_size=training_config["algorithm"]["batch_size"],
                              shuffle=True, collate_fn=dataUtils.collate_fn)
-    
+        text_loaders[split] = _loader #? seperate by the split
+    model_config = config[training_config["model"]] #? get current model
 
