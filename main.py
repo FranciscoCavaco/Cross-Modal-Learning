@@ -3,6 +3,9 @@ import numpy as np
 # ? Generate random state to ensure replicable results
 np.random.seed(16)
 
+import os
+import torch
+import torch.optim as optim
 from torch.utils.data import DataLoader
 from Utils import dataUtils, modelUtils, lossFuncs
 import yaml
@@ -44,6 +47,22 @@ def train(config, checkpoint_dir=None):
 
     lossFunc_config = config[alg_config["criterion"]]
     lossFunc = getattr(lossFuncs, lossFunc_config["name"], None)(**lossFunc_config["args"])
+
+    optimizer_config = config[alg_config["optimizer"]]
+    optimizer = getattr(optim, optimizer_config["name"], None)(
+        model.parameters(), **optimizer_config["args"]
+    )
+
+    lr_scheduler = getattr(optim.lr_scheduler, "ReduceLROnPlateau")(optimizer, **optimizer_config["scheduler_args"])
+
+
+    #? load checkpoint if it exists
+    if checkpoint_dir is not None:
+        model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"))
+        model.load_state_dict(model_state)
+        optimizer.load_state_dict(optimizer_state)
+
+   # modelUtils.train(model, optimizer, lossFunc, text_loaders["development"])
 
 
 if __name__ == "__main__":

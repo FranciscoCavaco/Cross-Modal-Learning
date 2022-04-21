@@ -75,6 +75,7 @@ class CRNNEncoder(nn.Module):
             rnn_in_dim = self.cnn(torch.randn(1, 500, kwargs["in_dim"])).shape
             rnn_in_dim = rnn_in_dim[-1]
 
+        #? It is //2 as the output dimension will be num_layers * 2 
         self.gru = nn.GRU(rnn_in_dim, kwargs["out_dim"] // 2, bidirectional=True, batch_first=True)
 
     def forward(self, x):
