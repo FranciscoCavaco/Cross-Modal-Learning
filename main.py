@@ -62,6 +62,10 @@ def train(config, checkpoint_dir=None):
         model.load_state_dict(model_state)
         optimizer.load_state_dict(optimizer_state)
 
+    for epoch in range(alg_config["epochs"]+1):
+        if epoch > 0:
+            modelUtils.train
+
    # modelUtils.train(model, optimizer, lossFunc, text_loaders["development"])
 
 

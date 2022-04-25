@@ -131,6 +131,7 @@ def load_data(config):
     vocabulary = Vocabulary()
     for word in word_vectors:
         if len(vocabulary) == 0:
+            #? with this trick the <pad> token is set to index 0, that is why we set the paddings as 0s in the padding function
             vocabulary.add_word("<pad>", np.zeros_like(word_vectors[word])) #? Create pad vector
         vocabulary.add_word(word, word_vectors[word]) #? Add word and the embedding
 

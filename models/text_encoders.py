@@ -35,6 +35,16 @@ class WordEmbedding(nn.Module):
         :return: (batch_size, query_max_len, embed_dim).
         """
 
+        '''
+        What basically happens is that we generate a (batch_size, query_max_len)
+        mask composed of a range of 0 to query_max_len. Then we compare it with the 
+        individual unpadded values of query_lens by doing:
+            mask = (mask < query_lens.view(-1, 1)).to(query_embeds.device)
+        This causes all the embeddings that correspond to  <PAD>s (index 0) to be set to 0. 
+        
+
+        '''
+
         query_lens = torch.as_tensor(query_lens)
         batch_size, query_max = queries.size()
 
