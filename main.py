@@ -14,9 +14,14 @@ from ray import tune
 from ray import tune
 from ray.tune.progress_reporter import CLIReporter
 from ray.tune.stopper import TrialPlateauStopper
+import time
+import h5py
 
 # ? train to be used with ray tune
 def train(config, checkpoint_dir=None):
+    print("Working:", os.getcwd())
+    print("environment: ", os.environ['TUNE_ORIG_WORKING_DIR'])
+    os.chdir(os.environ['TUNE_ORIG_WORKING_DIR'])
     """
     training:
     --------
@@ -106,35 +111,99 @@ if __name__ == "__main__":
     with open("conf.yaml", "rb") as stream:
         conf = yaml.full_load(stream)
 
-    ray_conf = conf["ray_conf"]
 
-    print(ray_conf)
+    config_data = conf["data"]
+    conf_splits = [config_data["splits"][split] for split in config_data["splits"]]
+
+    ray_conf = conf["ray_conf"]
 
     # Initialize a Ray cluster
     ray.init(**ray_conf["init_args"])
 
-    '''
+    """
     They can also stop the entire experiment after a condition is met. 
     For instance, stopping mechanisms can specify to stop trials when 
     they reached a plateau and the metric doesn’t change anymore.
     https://docs.ray.io/en/latest/tune/api_docs/stoppers.html
-    '''
+    """
 
     # Initialize a trial stopper
-    '''
+    """
     A trial is a set of epochs with a set of val_loss values,
     if the std of these values is lower than the threshold the trial 
     will be stoppped stopped early. This is because the loss isn't chaninging much.  
-    '''
+    """
     stopper = getattr(tune.stopper, ray_conf["trial_stopper"], TrialPlateauStopper)(
         **ray_conf["stopper_args"]
     )
 
-     # Initialize a progress reporter
-    '''
+    # Initialize a progress reporter
+    """
     This creates a command line interface reporter and reports the results of the model.
     JupyterNotebookReporter -> used for notebooks
-    '''
+    """
     reporter = getattr(tune.progress_reporter, ray_conf["reporter"], CLIReporter)()
-    for _split in ["train", "val", "test"]:
-        reporter.add_metric_column(metric="{0}_loss".format(_split))
+    for _split in conf_splits:
+        reporter.add_metric_column(metric=f"{_split}_loss")
+
+    #? Function to set the trial name
+    def trial_name_creator(trial):
+        training_model = conf["training"]["model"]
+        trial_name = f"{training_model}_{trial.trial_id}"
+        return trial_name
+
+    def trial_dirname_creator(trial):
+        trial_dirname = "{0}_{1}_{2}".format(
+            conf["training"]["model"], trial.trial_id, time.strftime("%Y-%m-%d_%H-%M-%S")
+        )
+        return trial_dirname
+
+    
+    # Run a Ray cluster - local_dir/exp_name/trial_name
+    analysis = tune.run(
+        run_or_experiment=train,
+        metric=ray_conf["stopper_args"]["metric"], #? validation_loss
+        mode=ray_conf["stopper_args"]["mode"],
+        name=conf["experiment"],
+        stop=stopper,
+        config=conf,
+        resources_per_trial={
+            "cpu": 1,
+            "gpu": ray_conf["init_args"]["num_gpus"] / ray_conf["init_args"]["num_cpus"]
+        },
+        num_samples=1,
+        local_dir=conf["output_path"], #? directory to save training results
+        # search_alg=search_alg,
+        # scheduler=scheduler,
+        keep_checkpoints_num=None,
+        checkpoint_score_attr=None,
+        progress_reporter=reporter,
+        log_to_file=True,
+        trial_name_creator=trial_name_creator,
+        trial_dirname_creator=trial_dirname_creator,
+        # max_failures=1,
+        fail_fast=False,
+        # restore="",  # Only makes sense to set if running 1 trial.
+        # resume="ERRORED_ONLY",
+        reuse_actors=True, #? Tune uses Ray actors to parallelize the evaluation of multiple hyperparameter configurations. 
+        raise_on_failed_trial=True
+    )
+
+    # Check the best trial and its best checkpoint
+    #? Compares all trials’ scores on metric. If metric is not specified, self.default_metric will be used.
+    #? https://docs.ray.io/en/latest/tune/api_docs/analysis.html
+    best_trial = analysis.get_best_trial(
+        metric=ray_conf["stopper_args"]["metric"],
+        mode=ray_conf["stopper_args"]["mode"],
+        scope="all"  #? look at all scores
+    )
+
+    #? checkpoint with best trial
+    best_checkpoint = analysis.get_best_checkpoint(
+        trial=best_trial,
+        metric=ray_conf["stopper_args"]["metric"],
+        mode=ray_conf["stopper_args"]["mode"]
+    )
+
+    print("Best trial:", best_trial.trial_id)
+    print("Best checkpoint:", best_checkpoint)

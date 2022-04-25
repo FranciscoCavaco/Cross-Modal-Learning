@@ -1,0 +1,36 @@
+Failure # 1 (occurred at 2022-04-25_18-52-14)
+Traceback (most recent call last):
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/ray/tune/ray_trial_executor.py", line 901, in get_next_executor_event
+    future_result = ray.get(ready_future)
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/ray/_private/client_mode_hook.py", line 105, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/ray/worker.py", line 1809, in get
+    raise value.as_instanceof_cause()
+ray.exceptions.RayTaskError(TuneError): [36mray::ImplicitFunc.train()[39m (pid=82929, ip=127.0.0.1, repr=train)
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/ray/tune/trainable.py", line 349, in train
+    result = self.step()
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/ray/tune/function_runner.py", line 403, in step
+    self._report_thread_runner_error(block=True)
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/ray/tune/function_runner.py", line 568, in _report_thread_runner_error
+    ("Trial raised an exception. Traceback:\n{}".format(err_tb_str))
+ray.tune.error.TuneError: Trial raised an exception. Traceback:
+[36mray::ImplicitFunc.train()[39m (pid=82929, ip=127.0.0.1, repr=train)
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/ray/tune/function_runner.py", line 272, in run
+    self._entrypoint()
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/ray/tune/function_runner.py", line 351, in entrypoint
+    self._status_reporter.get_checkpoint(),
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/ray/tune/function_runner.py", line 640, in _trainable_func
+    output = fn()
+  File "/Users/alopo/Desktop/University/Advanced AI/CW/cross-modal-learning/main.py", line 32, in train
+    text_datasets, vocabulary = dataUtils.load_data(config_data)
+  File "/Users/alopo/Desktop/University/Advanced AI/CW/cross-modal-learning/Utils/dataUtils.py", line 140, in load_data
+    audio_feats = h5py.File(feats_path, "r")  # ? read the h5py file
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/h5py/_hl/files.py", line 408, in __init__
+    swmr=swmr)
+  File "/Users/alopo/miniconda3/envs/advanced_ai/lib/python3.7/site-packages/h5py/_hl/files.py", line 173, in make_fid
+    fid = h5f.open(name, flags, fapl=fapl)
+  File "h5py/_objects.pyx", line 54, in h5py._objects.with_phil.wrapper
+  File "h5py/_objects.pyx", line 55, in h5py._objects.with_phil.wrapper
+  File "h5py/h5f.pyx", line 88, in h5py.h5f.open
+OSError: Unable to open file (unable to open file: name = 'SavedData/audio_logmel.hdf5', errno = 2, error message = 'No such file or directory', flags = 0, o_flags = 0)
+
