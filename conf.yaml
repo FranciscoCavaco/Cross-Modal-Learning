@@ -63,3 +63,27 @@ AdamOptimizer:
         threshold: 0.01
         threshold_mode: abs
 
+
+# Ray-tune configurations
+ray_conf:
+    init_args:
+        num_cpus: 1
+        num_gpus: 1
+        local_mode: False
+        ignore_reinit_error: True
+        _temp_dir: /tmp/ray
+
+    search_space: { }
+    search_alg: Null
+    trial_scheduler: Null
+
+    trial_stopper: TrialPlateauStopper
+    stopper_args:
+        metric: validation_loss  # {split}_loss
+        std: 0.01
+        num_results: 10
+        grace_period: 60
+        metric_threshold: Null
+        mode: min
+
+    reporter: CLIReporter

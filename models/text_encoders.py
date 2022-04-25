@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 
-#? Model from https://github.com/xieh97/dcase2022-audio-retrieval
-#? With google 300 news pretrained network, it will give an embedding of (batch, 300)
+# ? Model from https://github.com/xieh97/dcase2022-audio-retrieval
+# ? With google 300 news pretrained network, it will give an embedding of (batch, 300)
+
 
 class WordEmbedding(nn.Module):
-
     def __init__(self, *args, **kwargs):
         super(WordEmbedding, self).__init__()
 
@@ -23,7 +23,9 @@ class WordEmbedding(nn.Module):
             para.requires_grad = kwargs.get("trainable", False)
 
     def load_pretrained_embedding(self, weight):
-        assert weight.shape[0] == self.embedding.weight.size()[0], "vocabulary size mismatch!"
+        assert (
+            weight.shape[0] == self.embedding.weight.size()[0]
+        ), "vocabulary size mismatch!"
 
         weight = torch.as_tensor(weight).float()
         self.embedding.weight = nn.Parameter(weight)
@@ -35,7 +37,7 @@ class WordEmbedding(nn.Module):
         :return: (batch_size, query_max_len, embed_dim).
         """
 
-        '''
+        """
         What basically happens is that we generate a (batch_size, query_max_len)
         mask composed of a range of 0 to query_max_len. Then we compare it with the 
         individual unpadded values of query_lens by doing:
@@ -43,14 +45,18 @@ class WordEmbedding(nn.Module):
         This causes all the embeddings that correspond to  <PAD>s (index 0) to be set to 0. 
         
 
-        '''
+        """
 
         query_lens = torch.as_tensor(query_lens)
         batch_size, query_max = queries.size()
 
         query_embeds = self.embedding(queries)
 
-        mask = torch.arange(query_max, device="cpu").repeat(batch_size).view(batch_size, query_max)
+        mask = (
+            torch.arange(query_max, device="cpu")
+            .repeat(batch_size)
+            .view(batch_size, query_max)
+        )
         mask = (mask < query_lens.view(-1, 1)).to(query_embeds.device)
 
         query_embeds = query_embeds * mask.unsqueeze(-1)
@@ -59,7 +65,6 @@ class WordEmbedding(nn.Module):
 
 
 class WordEncoder(nn.Module):
-
     def __init__(self, *args, **kwargs):
         super(WordEncoder, self).__init__()
 
