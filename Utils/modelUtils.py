@@ -27,7 +27,7 @@ def get_model(config, vocabulary):
     model_args = copy.deepcopy(config["args"])
 
     # ? This allows us to configure different models
-    if config["name"] in ["CRNNWordModel"]:
+    if config["name"] in ["CRNNWordModel"] or config["name"] in ["PANNWordModel"]:
         # ? this sets the value by pass by value
         embed_args = model_args["text_encoder"]["word_embedding"]
         embed_args["num_word"] = len(vocabulary)
@@ -35,9 +35,8 @@ def get_model(config, vocabulary):
             vocabulary.get_weights() if embed_args["pretrained"] else None
         )
 
-        return getattr(core, config["name"], None)(**model_args)
-
-    return None
+    # ? also works for pannpretrained
+    return getattr(core, config["name"], None)(**model_args)
 
 
 def train(model, optimizer, loss_fun, data_loader):
@@ -45,14 +44,13 @@ def train(model, optimizer, loss_fun, data_loader):
     loss_fun.to(device=device)
     model.to(device=device)
 
-
-    '''
+    """
     https://stackoverflow.com/questions/51433378/what-does-model-train-do-in-pytorch
     model.train() tells your model that you are training the model. 
     So effectively layers like dropout, batchnorm etc. which behave 
     different on the train and test procedures know what is going on 
     and hence can behave accordingly.
-    '''
+    """
     model.train()
 
     for batch_idx, data in enumerate(data_loader, 0):
@@ -70,6 +68,7 @@ def train(model, optimizer, loss_fun, data_loader):
         loss = loss_fun(audio_embeds, query_embeds, infos)
         loss.backward()
         optimizer.step()
+
 
 def eval(model, loss_fun, data_loader):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -91,4 +90,4 @@ def eval(model, loss_fun, data_loader):
             eval_loss += loss.cpu().numpy()
             eval_steps += 1
 
-    return eval_loss / (eval_steps + 1e-20) #? find the average llss
+    return eval_loss / (eval_steps + 1e-20)  # ? find the average llss

@@ -116,7 +116,6 @@ class Cnn14(nn.Module):
         Output: (batch_size, emb_size)"""
 
         input = input.unsqueeze(1)
-        print('shape: ', input.shape)
 
         x = input.transpose(1, 3)
         x = self.bn0(x)
@@ -157,7 +156,7 @@ class Cnn14(nn.Module):
 
 
 class Transfer_Cnn14(nn.Module):
-    def __init__(self, classes_num, freeze_base):
+    def __init__(self, classes_num, pretrain_path, freeze_base):
         """Classifier for a new task using pretrained Cnn14 as a sub module."""
         super(Transfer_Cnn14, self).__init__()
         audioset_classes_num = 527
@@ -174,15 +173,21 @@ class Transfer_Cnn14(nn.Module):
 
         self.init_weights()
 
+        # ? make sure to have pretrain_path
+        self.load_from_pretrain(pretrain_path)
+
     def init_weights(self):
         init_layer(self.fc_transfer)
 
     def load_from_pretrain(self, pretrained_checkpoint_path):
+        print("Loading pretrained CNN14 model")
         checkpoint = torch.load(
             pretrained_checkpoint_path, map_location=torch.device("cpu")
         )
         # checkpoint = torch.load(pretrained_checkpoint_path)
-        self.base.load_state_dict(checkpoint["model"], strict=False) # We dont use "spectrogram_extractor.stft.conv_real.weight", "spectrogram_extractor.stft.conv_imag.weight", "logmel_extractor.melW"
+        self.base.load_state_dict(
+            checkpoint["model"], strict=False
+        )  # We dont use "spectrogram_extractor.stft.conv_real.weight", "spectrogram_extractor.stft.conv_imag.weight", "logmel_extractor.melW"
 
     def forward(self, input, mixup_lambda=None):
         """Input: (batch_size, data_length)"""

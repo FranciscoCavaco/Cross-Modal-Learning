@@ -34,12 +34,12 @@ class CRNNWordModel(nn.Module):
 class PANNWordModel(nn.Module):
     
     def __init__(self, *args, **kwargs):
-        super(CRNNWordModel, self).__init__()
+        super(PANNWordModel, self).__init__()
 
         self.args = args
         self.kwargs = kwargs
 
-        self.audio_encoder = audio_encoders.CRNNEncoder(**kwargs["audio_encoder"])
+        self.audio_encoder = pann_pretrain.Transfer_Cnn14(**kwargs["audio_encoder"])
 
         self.text_encoder = text_encoders.WordEncoder(**kwargs["text_encoder"])
 

@@ -36,9 +36,8 @@ def train(config, checkpoint_dir=None):
     text_loaders = {}
 
 
-    transfer = Transfer_Cnn14(300, True)
-    transfer.load_from_pretrain('./pretrain/Cnn14_16k.pth')
-
+    #transfer = Transfer_Cnn14(300, True)
+    #transfer.load_from_pretrain('./pretrain/Cnn14_16k.pth')
 
     _loader = DataLoader(
             dataset=text_datasets[conf_splits[0]],
@@ -46,11 +45,14 @@ def train(config, checkpoint_dir=None):
             shuffle=True,
             collate_fn=dataUtils.collate_fn,
         )
+    
+    model_config = config[training_config["model"]]
+    model = modelUtils.get_model(model_config, vocabulary)
     for batch in _loader:
         audio_feats, audio_lens, queries, query_lens, infos = batch
-        transfer_test = transfer(audio_feats)
-        print(audio_feats.shape)
-        print(transfer_test.shape)
+        audio_emb, query_emb = model(audio_feats,queries,query_lens )
+        print(query_emb.shape)
+        print(audio_emb.shape)
         break
     '''
     for split in conf_splits:

@@ -23,7 +23,7 @@ audio:
 
 # Configurations for training
 training:
-  model: CRNNWordModel
+  model: PANNWordModel
   algorithm:
     epochs: 150
     batch_size: 32
@@ -48,8 +48,9 @@ PANNWordModel:
   name: PANNWordModel
   args:
     audio_encoder:
-      nclassses: 300
-      freeze: True
+      classes_num: 300
+      freeze_base: True
+      pretrain_path: pretrain/Cnn14_16k.pth
     text_encoder:
       word_embedding:
         embed_dim: 300
