@@ -29,3 +29,5 @@ class CRNNWordModel(nn.Module):
 
         # audio_embeds: [N, E]    query_embeds: [N, E]
         return audio_embeds, query_embeds
+
+

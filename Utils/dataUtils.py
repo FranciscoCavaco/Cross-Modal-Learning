@@ -99,8 +99,8 @@ def collate_fn(data_batch):
         query_batch.append(q)
         info_batch.append(i)
 
-    audio_feat_batch, audio_feat_lens = pad_tesnsors(audio_feat_batch)
-    query_batch, query_lens = pad_tesnsors(query_batch)
+    audio_feat_batch, audio_feat_lens = pad_tensors(audio_feat_batch)
+    query_batch, query_lens = pad_tensors(query_batch)
 
     return (
         audio_feat_batch.float(),
@@ -112,7 +112,7 @@ def collate_fn(data_batch):
 
 
 # ? realistically padding is only needed for the tokens, as there can be larger sentences than others
-def pad_tesnsors(tensor_list):
+def pad_tensors(tensor_list):
     tensor_lens = [tensor.shape for tensor in tensor_list]
 
     dim_max_lens = tuple(np.max(tensor_lens, axis=0))
