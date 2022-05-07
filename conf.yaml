@@ -44,50 +44,58 @@ CRNNWordModel:
         pretrained: True
         trainable: False
 
-
+PANNWordModel:
+  name: PANNWordModel
+  args:
+    audio_encoder:
+      nclassses: 300
+      freeze: True
+    text_encoder:
+      word_embedding:
+        embed_dim: 300
+        pretrained: True
+        trainable: False
 # Algorithm hyper-parameters
 
 # Losses
 TripletRankingLoss:
-    name: TripletRankingLoss
-    args:
-        margin: 1.0
-
+  name: TripletRankingLoss
+  args:
+    margin: 1.0
 
 # Optimizers
 AdamOptimizer:
-    name: Adam
-    args:
-        lr: 0.001
-        weight_decay: 0.0
-    scheduler_args:
-        mode: min
-        factor: 0.1
-        patience: 5
-        threshold: 0.01
-        threshold_mode: abs
-
+  name: Adam
+  args:
+    lr: 0.001
+    weight_decay: 0.0
+  scheduler_args:
+    mode: min
+    factor: 0.1
+    patience: 5
+    threshold: 0.01
+    threshold_mode: abs
 
 # Ray-tune configurations
 ray_conf:
-    init_args:
-        num_cpus: 1
-        num_gpus: 1
-        local_mode: False
-        ignore_reinit_error: True
-        _temp_dir: /tmp/ray
+  init_args:
+    num_cpus: 1
+    num_gpus: 1
+    local_mode: False
+    ignore_reinit_error: True
+    _temp_dir: /tmp/ray
 
-    search_space: { }
-    search_alg: Null
-    trial_scheduler: Null
+  search_space: {}
+  search_alg: Null
+  trial_scheduler: Null
 
-    trial_stopper: TrialPlateauStopper
-    stopper_args:
-        metric: validation_loss  # {split}_loss
-        std: 0.01
-        num_results: 10
-        grace_period: 60
-        metric_threshold: Null
-        mode: min
+  trial_stopper: TrialPlateauStopper
+  stopper_args:
+    metric: validation_loss # {split}_loss
+    std: 0.01
+    num_results: 10
+    grace_period: 60
+    metric_threshold: Null
+    mode: min
 
-    reporter: CLIReporter
+  reporter: CLIReporter

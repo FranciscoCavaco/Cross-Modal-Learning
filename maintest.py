@@ -35,9 +35,23 @@ def train(config, checkpoint_dir=None):
 
     text_loaders = {}
 
-    print(conf_splits[0])
 
-    # Transfer_Cnn14
+    transfer = Transfer_Cnn14(300, True)
+    transfer.load_from_pretrain('./pretrain/Cnn14_16k.pth')
+
+
+    _loader = DataLoader(
+            dataset=text_datasets[conf_splits[0]],
+            batch_size=training_config["algorithm"]["batch_size"],
+            shuffle=True,
+            collate_fn=dataUtils.collate_fn,
+        )
+    for batch in _loader:
+        audio_feats, audio_lens, queries, query_lens, infos = batch
+        transfer_test = transfer(audio_feats)
+        print(audio_feats.shape)
+        print(transfer_test.shape)
+        break
     '''
     for split in conf_splits:
         _dataset = text_datasets[split]  # Extract information about dataset
