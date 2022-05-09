@@ -109,7 +109,7 @@ class Cnn14(nn.Module):
         init_layer(self.fc1)
         init_layer(self.fc_audioset)
 
-    def forward(self, input, mixup_lambda=None):
+    def forward(self, input):
         """
         Input: (batch_size, time_steps, mel_bins)
         Convert To: (batch_size, 1, time_steps, mel_bins)
@@ -124,9 +124,6 @@ class Cnn14(nn.Module):
         if self.training:
             x = self.spec_augmenter(x)
 
-        # Mixup on spectrogram
-        if self.training and mixup_lambda is not None:
-            x = do_mixup(x, mixup_lambda)
 
         x = self.conv_block1(x, pool_size=(2, 2), pool_type="avg")
         x = F.dropout(x, p=0.2, training=self.training)
@@ -189,9 +186,9 @@ class Transfer_Cnn14(nn.Module):
             checkpoint["model"], strict=False
         )  # We dont use "spectrogram_extractor.stft.conv_real.weight", "spectrogram_extractor.stft.conv_imag.weight", "logmel_extractor.melW"
 
-    def forward(self, input, mixup_lambda=None):
+    def forward(self, input):
         """Input: (batch_size, data_length)"""
-        output_dict = self.base(input, mixup_lambda)
+        output_dict = self.base(input)
         embedding = output_dict["embedding"]
 
         output = self.fc_transfer(embedding)

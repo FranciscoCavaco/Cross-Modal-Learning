@@ -152,7 +152,7 @@ class checkpoint_eval:
 
         # Initialize a model instance
         model_config = config[training_config["model"]]
-        model = f(model_config, vocabulary)
+        model = modelUtils.get_model(model_config, vocabulary)
         print(model)
 
         # Restore model states
@@ -182,6 +182,7 @@ class checkpoint_eval:
 
 
 if __name__ == "__main__":
-    print('hello')
+   checkpointEval = checkpoint_eval()
+   
 
 #retrieval_metrics(gt_csv, pred_csv)
