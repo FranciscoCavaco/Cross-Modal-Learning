@@ -1,7 +1,7 @@
 import copy
 from models import core
 import torch
-
+import os
 # ? Vocabulary is the list of all the embeddings
 """
 Config:
@@ -91,3 +91,10 @@ def eval(model, loss_fun, data_loader):
             eval_steps += 1
 
     return eval_loss / (eval_steps + 1e-20)  # ? find the average llss
+
+#? Restore pretrained model
+def restore(model, checkpoint_dir):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"), map_location=device)
+    model.load_state_dict(model_state)
+    return model

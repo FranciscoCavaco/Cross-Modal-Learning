@@ -1,6 +1,6 @@
 import numpy as np
 import ray
-from eval_script import retrieval_metrics
+from evalScript import retrieval_metrics
 
 from models.pann_pretrain import Transfer_Cnn14
 
