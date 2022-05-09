@@ -1,5 +1,6 @@
 import numpy as np
 import ray
+from eval_script import retrieval_metrics
 
 from models.pann_pretrain import Transfer_Cnn14
 
@@ -131,7 +132,8 @@ if __name__ == "__main__":
     with open("conf.yaml", "rb") as stream:
         conf = yaml.full_load(stream)
 
-    train(conf)
+    #train(conf)
+    retrieval_metrics('test.gt.csv', 'test.output.csv')
 
     '''
     config_data = conf["data"]
