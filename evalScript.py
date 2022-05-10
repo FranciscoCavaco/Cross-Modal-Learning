@@ -2,11 +2,13 @@ import pandas as pd
 import torch
 import torchmetrics
 import os
+import yaml
 from Utils import dataUtils, modelUtils
+from tqdm import tqdm
 
 
 # ? Eval from https://github.com/xieh97/dcase2022-audio-retrieval
-#? Functions go refractored to a class and adapted for the coursework
+# ? Functions go refractored to a class and adapted for the coursework
 class model_stats:
     def __init__(self) -> None:
         self.gt_csv = "test.gt.csv"  # ground truth for Clotho evaluation data
@@ -82,6 +84,7 @@ class model_stats:
         for key in metrics:
             print(key, "{:.2f}".format(metrics[key]))
 
+
 class checkpoint_eval:
     def __transform(self, model, dataset, index, device=None):
         audio, query, info = dataset[index]
@@ -96,7 +99,6 @@ class checkpoint_eval:
 
         return audio_emb, query_emb, info
 
-
     def __audio_retrieval(self, model, caption_dataset, K=10):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device=device)
@@ -109,8 +111,12 @@ class checkpoint_eval:
             cid_embs, cid_infos = {}, {}
 
             # Encode audio signals and captions
-            for cap_ind in range(len(caption_dataset)):
-                audio_emb, query_emb, info = self.__transform(model, caption_dataset, cap_ind, device)
+            for cap_ind in tqdm(
+                range(len(caption_dataset)), desc="Loading caption data"
+            ):
+                audio_emb, query_emb, info = self.__transform(
+                    model, caption_dataset, cap_ind, device
+                )
 
                 fid_embs[info["fid"]] = audio_emb
                 fid_fnames[info["fid"]] = info["fname"]
@@ -120,7 +126,7 @@ class checkpoint_eval:
 
             # Stack audio embeddings
             audio_embs, fnames = [], []
-            for fid in fid_embs:
+            for fid in tqdm(fid_embs, desc="Formating audio embeddings and file names"):
                 audio_embs.append(fid_embs[fid])
                 fnames.append(fid_fnames[fid])
 
@@ -128,9 +134,13 @@ class checkpoint_eval:
 
             # Compute similarities
             output_rows = []
-            for cid in cid_embs:
-
-                sims = torch.mm(torch.vstack([cid_embs[cid]]), audio_embs.T).flatten().to(device=device)
+            for cid in tqdm(cid_embs, desc="Caption-File similarity"):
+                # ? mm Performs a matrix multiplication of the matrices input and mat2.
+                sims = (
+                    torch.mm(torch.vstack([cid_embs[cid]]), audio_embs.T)
+                    .flatten()
+                    .to(device=device)
+                )
 
                 sorted_idx = torch.argsort(sims, dim=-1, descending=True)
 
@@ -141,7 +151,6 @@ class checkpoint_eval:
                 output_rows.append(csv_row)
 
             return output_rows
-
 
     def eval_checkpoint(self, config, checkpoint_dir):
         # Load config
@@ -160,29 +169,39 @@ class checkpoint_eval:
         model.eval()
 
         # Retrieve audio files for evaluation captions
-        for split in ["test"]:
+        for split in ["evaluation"]:
             output = self.__audio_retrieval(model, caption_datasets[split], K=10)
 
-            csv_fields = ["caption",
-                        "file_name_1",
-                        "file_name_2",
-                        "file_name_3",
-                        "file_name_4",
-                        "file_name_5",
-                        "file_name_6",
-                        "file_name_7",
-                        "file_name_8",
-                        "file_name_9",
-                        "file_name_10"]
+            csv_fields = [
+                "caption",
+                "file_name_1",
+                "file_name_2",
+                "file_name_3",
+                "file_name_4",
+                "file_name_5",
+                "file_name_6",
+                "file_name_7",
+                "file_name_8",
+                "file_name_9",
+                "file_name_10",
+            ]
 
             output = pd.DataFrame(data=output, columns=csv_fields)
-            output.to_csv(os.path.join(checkpoint_dir, "{}.output.csv".format(split)),
-                        index=False)
+            output.to_csv(
+                os.path.join(checkpoint_dir, "{}.output.csv".format(split)), index=False
+            )
             print("Saved", "{}.output.csv".format(split))
 
 
 if __name__ == "__main__":
-   checkpointEval = checkpoint_eval()
-   
+    with open("conf.yaml", "rb") as stream:
+        conf = yaml.full_load(stream)
 
-#retrieval_metrics(gt_csv, pred_csv)
+    #checkpointEval = checkpoint_eval()
+
+    #checkpointEval.eval_checkpoint(conf, "model_results/CNN14/checkpoint")
+    #modelStats = model_stats()
+    #modelStats.retrieval_metrics('test.gt.csv','model_results/CNN14/checkpoint/evaluation.output.csv')
+
+
+# retrieval_metrics(gt_csv, pred_csv)

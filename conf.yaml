@@ -100,3 +100,15 @@ ray_conf:
     mode: min
 
   reporter: CLIReporter
+
+# Evaluation data
+eval_data:
+  dataset_dir: Clotho
+  splits:
+    train: development
+    val: validation
+    test: evaluation
+  hdf5_dir: SavedData
+  hdf5_file: audio_logmel.hdf5
+  pickle_dir: SavedData
+  emb_file: word2vec_emb.pkl

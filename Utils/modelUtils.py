@@ -96,5 +96,7 @@ def eval(model, loss_fun, data_loader):
 def restore(model, checkpoint_dir):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"), map_location=device)
+    print("Setting the evaluation weights")
+    
     model.load_state_dict(model_state)
     return model
