@@ -1,5 +1,5 @@
 # Cross-Modal-Learning
 
-Cross Modal Learning AI group project CW
+Cross Modal Learning, Deep Learning Uni group project CW 2022
 
 Code credits to @afonso07
